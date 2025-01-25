@@ -1,3 +1,5 @@
+"use client";
+
 import { useRouter } from "next/navigation";
 import React from "react";
 import { useForm } from "react-hook-form";
@@ -8,6 +10,16 @@ import { useToast } from "@/components/ui/use-toast";
 import { useParams } from "next/navigation";
 import axios, { AxiosError } from "axios";
 import { ApiResponse } from "@/types/ApiResponse";
+import {
+  Form,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { verifySchema } from "@/schemas/verifySchema";
 
 const VerifyAccount = () => {
   const router = useRouter();

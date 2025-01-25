@@ -1,9 +1,13 @@
 import dbConnect from "@/lib/dbConnect";
 import UserModel from "@/model/user";
 import bcrypt from "bcryptjs";
-import { send } from "process";
+// import { send } from "process";
 
 import { sendVerificationEmail } from "@/helpers/sendVerificationEmail";
+import { AxiosError } from "axios";
+import { ApiResponse } from "@/types/ApiResponse";
+import { toast } from "@/components/ui/use-toast";
+import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
   await dbConnect();
@@ -30,17 +34,24 @@ export async function POST(request: Request) {
 
     if (existingUserByEmail) {
       if (existingUserByEmail.isVerified) {
-        return Response.json({
-          success: false,
-          message: "Email already exists",
-        },{
-          status: 400})
-          }else{
-            const hashedPassword = await bcrypt.hash(password, 10);
-            existingUserByEmail.password = hashedPassword;
-            existingUserByEmail.verifyCode = verifyCode;
-            existingUserByEmail.verifyCodeExpiry = new Date(Date.now() + 60 * 60 * 1000); 
-          await existingUserByEmail.save();      }
+        return Response.json(
+          {
+            success: false,
+            message: "Email already exists",
+          },
+          {
+            status: 400,
+          }
+        );
+      } else {
+        const hashedPassword = await bcrypt.hash(password, 10);
+        existingUserByEmail.password = hashedPassword;
+        existingUserByEmail.verifyCode = verifyCode;
+        existingUserByEmail.verifyCodeExpiry = new Date(
+          Date.now() + 60 * 60 * 1000
+        );
+        await existingUserByEmail.save();
+      }
     } else {
       const hashedPassword = await bcrypt.hash(password, 10);
       const expiryDate = new Date();
@@ -52,44 +63,46 @@ export async function POST(request: Request) {
         verifyCode,
         verifyCodeExpiry: expiryDate,
         isVerified: false,
-        isAcceptingMessages:true,
+        isAcceptingMessages: true,
         messages: [],
-      })
-      await newUser.save(); 
+      });
+      await newUser.save();
     }
     //send verification email
     const emailResponse = await sendVerificationEmail(
       email,
       username,
-      verifyCode  
-    )
-    if(!emailResponse.success){
-      return Response.json({
-        success: false,
-        message:emailResponse.message
-      },{
-        status: 500
-      })
-      return Response.json({
-        success: true,
-        message: "Verification email sent successfully. Please verify ur email"
-      },{status:201}
-      )
-
-
-
-
-  } catch (error) {
-    console.error("Error registering user:", error);
-    return Response.json(
-      {
-        success: false,
-        message: "Error registering user",
-      },
-      {
-        status: 500,
-      }
+      verifyCode
     );
+    if (!emailResponse.success) {
+      return Response.json(
+        {
+          success: false,
+          message: emailResponse.message,
+        },
+        {
+          status: 500,
+        }
+      );
+      return Response.json(
+        {
+          success: true,
+          message:
+            "Verification email sent successfully. Please verify ur email",
+        },
+        { status: 201 }
+      );
+    }
+  } catch (error) {
+    console.error("Error in signup of user", error);
+    const axiosError = error as AxiosError<ApiResponse>;
+    const errorMessage = axiosError.response?.data.message;
+    toast({
+      title: "SignUp Failed",
+      description: errorMessage,
+      variant: "destructive",
+    });
+    // setIsSubmitting(false);
+    return NextResponse.json({ message: "Error signing up" }, { status: 500 });
   }
-}
 }

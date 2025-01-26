@@ -1,23 +1,17 @@
 import dbConnect from "@/lib/dbConnect";
 import UserModel from "@/model/user";
 import bcrypt from "bcryptjs";
-// import { send } from "process";
-
 import { sendVerificationEmail } from "@/helpers/sendVerificationEmail";
-import { AxiosError } from "axios";
-import { ApiResponse } from "@/types/ApiResponse";
-import { toast } from "@/components/ui/use-toast";
-import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
   await dbConnect();
-
   try {
     const { username, email, password } = await request.json();
-    const existingUserVerifiedByUsername = await UserModel.findOneAndDelete({
+    const existingUserVerifiedByUsername = await UserModel.findOne({
       username,
       isVerified: true,
     });
+
     if (existingUserVerifiedByUsername) {
       return Response.json(
         {
@@ -27,11 +21,12 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
+
     const existingUserByEmail = await UserModel.findOne({
       email,
     });
     const verifyCode = Math.floor(100000 + Math.random() * 900000).toString();
-
+    //is mail is verified
     if (existingUserByEmail) {
       if (existingUserByEmail.isVerified) {
         return Response.json(
@@ -84,25 +79,22 @@ export async function POST(request: Request) {
           status: 500,
         }
       );
-      return Response.json(
-        {
-          success: true,
-          message:
-            "Verification email sent successfully. Please verify ur email",
-        },
-        { status: 201 }
-      );
     }
+    return Response.json(
+      {
+        success: true,
+        message: "Verification email sent successfully. Please verify ur email",
+      },
+      { status: 201 }
+    );
   } catch (error) {
-    console.error("Error in signup of user", error);
-    const axiosError = error as AxiosError<ApiResponse>;
-    const errorMessage = axiosError.response?.data.message;
-    toast({
-      title: "SignUp Failed",
-      description: errorMessage,
-      variant: "destructive",
-    });
-    // setIsSubmitting(false);
-    return NextResponse.json({ message: "Error signing up" }, { status: 500 });
+    console.error("Error registering user:", error);
+    return Response.json(
+      {
+        success: false,
+        message: "Error registering user",
+      },
+      { status: 500 }
+    );
   }
 }

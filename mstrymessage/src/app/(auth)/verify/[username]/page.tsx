@@ -1,15 +1,17 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
 import React from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { signUpSchema } from "@/schemas/signUpSchema";
-import { useToast } from "@/components/ui/use-toast";
-import { useParams } from "next/navigation";
-import axios, { AxiosError } from "axios";
+import { useParams, useRouter } from "next/navigation";
 import { ApiResponse } from "@/types/ApiResponse";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/components/ui/use-toast";
+import axios, { AxiosError } from "axios";
+import { verifySchema } from "@/schemas/verifySchema";
 import {
   Form,
   FormField,
@@ -17,17 +19,14 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { verifySchema } from "@/schemas/verifySchema";
 
-const VerifyAccount = () => {
+export default function VerifyAccount() {
   const router = useRouter();
   const params = useParams<{ username: string }>();
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof verifySchema>>({
-    resolver: zodResolver(signUpSchema),
+    resolver: zodResolver(verifySchema),
   });
 
   const onSubmit = async (data: z.infer<typeof verifySchema>) => {
@@ -81,6 +80,4 @@ const VerifyAccount = () => {
       </div>
     </div>
   );
-};
-
-export default VerifyAccount;
+}
